@@ -38,14 +38,21 @@
 #define kYTKNetworkIncompleteDownloadFolderName @"Incomplete"
 
 @implementation YTKNetworkAgent {
+    // 使用管理类真正的发送请求
     AFHTTPSessionManager *_manager;
+    // host、url过滤等相关配置
     YTKNetworkConfig *_config;
+    // json响应序列化
     AFJSONResponseSerializer *_jsonResponseSerializer;
+    // xml响应序列化
     AFXMLParserResponseSerializer *_xmlParserResponseSerialzier;
+    // 持有所有请求
     NSMutableDictionary<NSNumber *, YTKBaseRequest *> *_requestsRecord;
-
+    // 并行队列
     dispatch_queue_t _processingQueue;
+    // 锁
     pthread_mutex_t _lock;
+    // 包含着网络运行的所有状态
     NSIndexSet *_allStatusCodes;
 }
 
@@ -69,6 +76,8 @@
         pthread_mutex_init(&_lock, NULL);
 
         _manager.securityPolicy = _config.securityPolicy;
+        // 默认是使用 AFHTTPResponseSerializer 这是响应，为了在 handle 的时候
+        // 为了在 handle 方法中，根据 request 的 responseSerializerType ，解析 NSDate
         _manager.responseSerializer = [AFHTTPResponseSerializer serializer];
         // Take over the status code validation
         _manager.responseSerializer.acceptableStatusCodes = _allStatusCodes;
@@ -98,13 +107,17 @@
 
 - (NSString *)buildRequestUrl:(YTKBaseRequest *)request {
     NSParameterAssert(request != nil);
-
+    // 如果 YTKBaseRequest 实现了，返回的有可能是相对路径，也有可能是完整的 URL
     NSString *detailUrl = [request requestUrl];
+    
+    // 根据 detailUrl 创建 URL
+    // 如果成功，说明 requestUrl 是一个完整的 URL，不需要在拼接 Host
     NSURL *temp = [NSURL URLWithString:detailUrl];
     // If detailUrl is valid URL
     if (temp && temp.host && temp.scheme) {
         return detailUrl;
     }
+    
     // Filter URL if needed
     NSArray *filters = [_config urlFilters];
     for (id<YTKUrlFilterProtocol> f in filters) {
@@ -127,7 +140,7 @@
     }
     // URL slash compability
     NSURL *url = [NSURL URLWithString:baseUrl];
-
+    // http://www.example.com => http://www.example.com/
     if (baseUrl.length > 0 && ![baseUrl hasSuffix:@"/"]) {
         url = [url URLByAppendingPathComponent:@""];
     }
@@ -154,6 +167,7 @@
     }
 
     // If api needs to add custom value to HTTPHeaderField
+    // 设置请求头
     NSDictionary<NSString *, NSString *> *headerFieldValueDictionary = [request requestHeaderFieldValueDictionary];
     if (headerFieldValueDictionary != nil) {
         for (NSString *httpHeaderField in headerFieldValueDictionary.allKeys) {
@@ -164,16 +178,22 @@
     return requestSerializer;
 }
 
-- (NSURLSessionTask *)sessionTaskForRequest:(YTKBaseRequest *)request error:(NSError * _Nullable __autoreleasing *)error {
+- (NSURLSessionTask *)sessionTaskForRequest:(YTKBaseRequest *)request
+                                      error:(NSError * _Nullable __autoreleasing *)error {
+    // 获取请求的方法
     YTKRequestMethod method = [request requestMethod];
+    // 根据 YTKBaseRequest 构建 Request 的 url
     NSString *url = [self buildRequestUrl:request];
     id param = request.requestArgument;
     AFConstructingBlock constructingBlock = [request constructingBodyBlock];
+    
+    // 生成请求序列化
     AFHTTPRequestSerializer *requestSerializer = [self requestSerializerForRequest:request];
 
     switch (method) {
         case YTKRequestMethodGET:
             if (request.resumableDownloadPath) {
+                // 下载
                 return [self downloadTaskWithDownloadPath:request.resumableDownloadPath requestSerializer:requestSerializer URLString:url parameters:param progress:request.resumableDownloadProgressBlock error:error];
             } else {
                 return [self dataTaskWithHTTPMethod:@"GET" requestSerializer:requestSerializer URLString:url parameters:param error:error];
@@ -198,12 +218,15 @@
 
     NSURLRequest *customUrlRequest= [request buildCustomUrlRequest];
     if (customUrlRequest) {
+        // 如果 YTKBaseRequest 的子类实现了 buildCustomUrlRequest ，就不需要走 YTK 默认的构建过流程
+        // 可以直接通过 AF 发起请求，获取请求任务
         __block NSURLSessionDataTask *dataTask = nil;
         dataTask = [_manager dataTaskWithRequest:customUrlRequest completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
             [self handleRequestResult:dataTask responseObject:responseObject error:error];
         }];
         request.requestTask = dataTask;
     } else {
+        // 创建请求任务
         request.requestTask = [self sessionTaskForRequest:request error:&requestSerializationError];
     }
 
@@ -243,6 +266,7 @@
 
     if (request.resumableDownloadPath) {
         NSURLSessionDownloadTask *requestTask = (NSURLSessionDownloadTask *)request.requestTask;
+        // 取消下载的任务后，保留信息，以便下次断点续传使用
         [requestTask cancelByProducingResumeData:^(NSData *resumeData) {
             NSURL *localUrl = [self incompleteDownloadTempPathForDownloadPath:request.resumableDownloadPath];
             [resumeData writeToURL:localUrl atomically:YES];
@@ -318,18 +342,21 @@
 
     request.responseObject = responseObject;
     if ([request.responseObject isKindOfClass:[NSData class]]) {
+        // 二进制 Data
         request.responseData = responseObject;
         request.responseString = [[NSString alloc] initWithData:responseObject encoding:[YTKNetworkUtils stringEncodingWithRequest:request]];
-
+        // 解析 Date
         switch (request.responseSerializerType) {
             case YTKResponseSerializerTypeHTTP:
-                // Default serializer. Do nothing.
+                // Default serializer. Do nothing. => AFHTTPResponseSerializer
                 break;
             case YTKResponseSerializerTypeJSON:
+                // JSON 解析
                 request.responseObject = [self.jsonResponseSerializer responseObjectForResponse:task.response data:request.responseData error:&serializationError];
                 request.responseJSONObject = request.responseObject;
                 break;
             case YTKResponseSerializerTypeXMLParser:
+                // XML 解析
                 request.responseObject = [self.xmlParserResponseSerialzier responseObjectForResponse:task.response data:request.responseData error:&serializationError];
                 break;
         }
@@ -430,6 +457,7 @@
 
 #pragma mark -
 
+// 发起请求
 - (NSURLSessionDataTask *)dataTaskWithHTTPMethod:(NSString *)method
                                requestSerializer:(AFHTTPRequestSerializer *)requestSerializer
                                        URLString:(NSString *)URLString
@@ -492,10 +520,12 @@
         [[NSFileManager defaultManager] removeItemAtPath:downloadTargetPath error:nil];
     }
 
+    // 判断有没有上次下载没有完成的数据
     BOOL resumeDataFileExists = [[NSFileManager defaultManager] fileExistsAtPath:[self incompleteDownloadTempPathForDownloadPath:downloadPath].path];
     NSData *data = [NSData dataWithContentsOfURL:[self incompleteDownloadTempPathForDownloadPath:downloadPath]];
+    // 是否可用
     BOOL resumeDataIsValid = [YTKNetworkUtils validateResumeData:data];
-
+    // 能够续上
     BOOL canBeResumed = resumeDataFileExists && resumeDataIsValid;
     BOOL resumeSucceeded = NO;
     __block NSURLSessionDownloadTask *downloadTask = nil;
@@ -528,6 +558,7 @@
 
 #pragma mark - Resumable Download
 
+// 下载的的临时缓存文件目录
 - (NSString *)incompleteDownloadTempCacheFolder {
     NSFileManager *fileManager = [NSFileManager new];
     static NSString *cacheFolder;
@@ -545,6 +576,7 @@
     return cacheFolder;
 }
 
+//
 - (NSURL *)incompleteDownloadTempPathForDownloadPath:(NSString *)downloadPath {
     NSString *tempPath = nil;
     NSString *md5URLString = [YTKNetworkUtils md5StringFromString:downloadPath];

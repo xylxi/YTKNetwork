@@ -77,6 +77,7 @@ NS_ENUM(NSInteger) {
 ///  Version can be used to identify and invalidate local cache. Default is 0.
 - (long long)cacheVersion;
 
+/// TODO::
 ///  This can be used as additional identifier that tells the cache needs updating.
 ///
 ///  @discussion The `description` string of this object will be used as an identifier to verify whether cache

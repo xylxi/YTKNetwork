@@ -86,6 +86,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    [self loadCacheData];
 }
 
 - (void)didReceiveMemoryWarning {

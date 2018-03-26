@@ -1,6 +1,6 @@
 //
 //  YTKBaseRequest.h
-//
+//  TODO::
 //  Copyright (c) 2012-2016 YTKNetwork https://github.com/yuantiku
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -42,7 +42,7 @@ typedef NS_ENUM(NSInteger, YTKRequestMethod) {
     YTKRequestMethodPATCH,
 };
 
-///  Request serializer type.
+///  请求序列化方式
 typedef NS_ENUM(NSInteger, YTKRequestSerializerType) {
     YTKRequestSerializerTypeHTTP = 0,
     YTKRequestSerializerTypeJSON,
@@ -59,7 +59,7 @@ typedef NS_ENUM(NSInteger, YTKResponseSerializerType) {
     YTKResponseSerializerTypeXMLParser,
 };
 
-///  Request priority
+///  请求优先级 iOS8+
 typedef NS_ENUM(NSInteger, YTKRequestPriority) {
     YTKRequestPriorityLow = -4L,
     YTKRequestPriorityDefault = 0,
@@ -67,12 +67,13 @@ typedef NS_ENUM(NSInteger, YTKRequestPriority) {
 };
 
 @protocol AFMultipartFormData;
-
+// 构建 POST 请求的 body
 typedef void (^AFConstructingBlock)(id<AFMultipartFormData> formData);
+// 任务进度
 typedef void (^AFURLSessionTaskProgressBlock)(NSProgress *);
 
 @class YTKBaseRequest;
-
+// 请求完成后的回调
 typedef void(^YTKRequestCompletionBlock)(__kindof YTKBaseRequest *request);
 
 ///  The YTKRequestDelegate protocol defines several optional methods you can use
@@ -209,6 +210,7 @@ typedef void(^YTKRequestCompletionBlock)(__kindof YTKBaseRequest *request);
 ///  This can be use to construct HTTP body when needed in POST request. Default is nil.
 @property (nonatomic, copy, nullable) AFConstructingBlock constructingBodyBlock;
 
+/// TODO::
 ///  This value is used to perform resumable download request. Default is nil.
 ///
 ///  @discussion NSURLSessionDownloadTask is used when this value is not nil.
@@ -299,6 +301,7 @@ typedef void(^YTKRequestCompletionBlock)(__kindof YTKBaseRequest *request);
 - (nullable id)requestArgument;
 
 ///  Override this method to filter requests with certain arguments when caching.
+/// 当数据需要缓存的时候，调用这个方法，返回一个组成 cache_key 需求的部分，
 - (id)cacheFileNameFilterForRequestArgument:(id)argument;
 
 ///  HTTP request method.
@@ -324,6 +327,7 @@ typedef void(^YTKRequestCompletionBlock)(__kindof YTKBaseRequest *request);
 - (BOOL)useCDN;
 
 ///  Whether the request is allowed to use the cellular radio (if present). Default is YES.
+/// 是否运行使用蜂窝网络，默认是YES
 - (BOOL)allowsCellularAccess;
 
 ///  The validator will be used to test if `responseJSONObject` is correctly formed.

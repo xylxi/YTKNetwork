@@ -137,6 +137,7 @@ void YTKLog(NSString *format, ...) {
     if (!data || [data length] < 1) return NO;
 
     NSError *error;
+    // 这里可以获取到上次断点保留的信息
     NSDictionary *resumeDictionary = [NSPropertyListSerialization propertyListWithData:data options:NSPropertyListImmutable format:NULL error:&error];
     if (!resumeDictionary || error) return NO;
 
