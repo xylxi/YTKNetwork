@@ -14,7 +14,7 @@ PODS:
   - AFNetworking/Serialization (3.1.0)
   - AFNetworking/UIKit (3.1.0):
     - AFNetworking/NSURLSession
-  - YTKNetwork (2.0.1):
+  - YTKNetwork (2.0.4):
     - AFNetworking (~> 3.0)
 
 DEPENDENCIES:
@@ -23,12 +23,12 @@ DEPENDENCIES:
 
 EXTERNAL SOURCES:
   YTKNetwork:
-    :path: "../"
+    :path: ../
 
 SPEC CHECKSUMS:
   AFNetworking: 5e0e199f73d8626b11e79750991f5d173d1f8b67
-  YTKNetwork: f21ad2073b3353a11d257593a2859f2904bbec75
+  YTKNetwork: df8a7a5597bda1664a4efaa7ef871a818a887fe0
 
 PODFILE CHECKSUM: fac6c10b171443ed76dffcc019afa1046783a5cd
 
-COCOAPODS: 1.0.1
+COCOAPODS: 1.4.0.beta.2
