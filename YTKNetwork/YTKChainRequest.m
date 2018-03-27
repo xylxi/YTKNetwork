@@ -28,9 +28,13 @@
 
 @interface YTKChainRequest()<YTKRequestDelegate>
 
+// 持有每一个 Request
 @property (strong, nonatomic) NSMutableArray<YTKBaseRequest *> *requestArray;
+// 持有每一个 Request 对应的 Callback
 @property (strong, nonatomic) NSMutableArray<YTKChainCallback> *requestCallbackArray;
+// 当前轮到的 Request 执行下标
 @property (assign, nonatomic) NSUInteger nextRequestIndex;
+// 如果添加的 Request 没有 Callback ，默认添加的一个，以便保证数组的对齐
 @property (strong, nonatomic) YTKChainCallback emptyCallback;
 
 @end

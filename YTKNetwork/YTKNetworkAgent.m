@@ -239,19 +239,21 @@
 
     // Set request task priority
     // !!Available on iOS 8 +
-    if ([request.requestTask respondsToSelector:@selector(priority)]) {
-        switch (request.requestPriority) {
-            case YTKRequestPriorityHigh:
-                request.requestTask.priority = NSURLSessionTaskPriorityHigh;
-                break;
-            case YTKRequestPriorityLow:
-                request.requestTask.priority = NSURLSessionTaskPriorityLow;
-                break;
-            case YTKRequestPriorityDefault:
-                /*!!fall through*/
-            default:
-                request.requestTask.priority = NSURLSessionTaskPriorityDefault;
-                break;
+    if (@available(iOS 8.0, *)) {
+        if ([request.requestTask respondsToSelector:@selector(priority)]) {
+            switch (request.requestPriority) {
+                case YTKRequestPriorityHigh:
+                    request.requestTask.priority = NSURLSessionTaskPriorityHigh;
+                    break;
+                case YTKRequestPriorityLow:
+                    request.requestTask.priority = NSURLSessionTaskPriorityLow;
+                    break;
+                case YTKRequestPriorityDefault:
+                    /*!!fall through*/
+                default:
+                    request.requestTask.priority = NSURLSessionTaskPriorityDefault;
+                    break;
+            }
         }
     }
 
